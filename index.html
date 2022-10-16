@@ -1,0 +1,179 @@
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <title>Matrix Text Effect - pingpoli.de</title>
+    <script>
+        var message = "";
+        var caret = '<span id="caret">&nbsp;</span>'
+
+        var tileSize = 50;
+        // a higher fade factor will make the characters fade quicker
+        var fadeFactor = 0.1;
+
+        var canvas;
+        var ctx;
+
+        var columns = [];
+        var maxStackHeight;
+
+        function init() {
+            canvas = document.getElementById('canvas');
+            ctx = canvas.getContext('2d');
+
+            // https://developer.mozilla.org/en-US/docs/Web/API/ResizeObserver
+            const resizeObserver = new ResizeObserver(entries => {
+                for (let entry of entries) {
+                    if (entry.contentBoxSize) {
+                        // Firefox implements `contentBoxSize` as a single content rect, rather than an array
+                        const contentBoxSize = Array.isArray(entry.contentBoxSize) ? entry.contentBoxSize[0] : entry.contentBoxSize;
+
+                        canvas.width = contentBoxSize.inlineSize;
+                        canvas.height = window.innerHeight;
+
+                        initMatrix();
+                    }
+                }
+            });
+
+            // observe the size of the document
+            resizeObserver.observe(document.documentElement);
+
+            // start the main loop
+            tick();
+            setTimeout(() => run(
+                document.getElementById("message"),
+                [   
+                    [type, period(-2000), 150],
+                    [countDown]
+                ]), 3000)
+        }
+
+        function run(elem, actions, i = 0) {
+            if (i < actions.length) {
+                const [action, ...params] = actions[i]
+                action(elem, ...params, () => run(elem, actions, i + 1))
+            }
+        }
+
+        function type(elem, text, interval, next, i = 0) {
+            if (i < text.length) {
+                message += text[i];
+                elem.innerHTML = message + caret
+                setTimeout(() => type(elem, text, interval, next, i + 1), interval)
+            } else {
+                next()
+            }
+        }
+
+        function initMatrix() {
+            columns = [];
+
+            maxStackHeight = Math.ceil(canvas.height / tileSize);
+
+            // divide the canvas into columns
+            for (let i = 0; i < canvas.width / tileSize; ++i) {
+                var column = {};
+                // save the x position of the column
+                column.x = i * tileSize;
+                // create a random stack height for the column
+                column.stackHeight = 10 + Math.random() * maxStackHeight;
+                // add a counter to count the stack height
+                column.stackCounter = 0;
+                // add the column to the list
+                columns.push(column);
+            }
+        }
+
+        function draw() {
+            // draw a semi transparent black rectangle on top of the scene to slowly fade older characters
+            ctx.fillStyle = "rgba( 0 , 0 , 0 , " + fadeFactor + " )";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            ctx.font = (tileSize - 2) + "px monospace";
+            ctx.fillStyle = "rgb( 0 , 255 , 0 )";
+            for (let i = 0; i < columns.length; ++i) {
+                // pick a random ascii character (change the 94 to a higher number to include more characters)
+                var randomCharacter = String.fromCharCode(33 + Math.floor(Math.random() * 94));
+                ctx.fillText(randomCharacter, columns[i].x, columns[i].stackCounter * tileSize + tileSize);
+
+                // if the stack is at its height limit, pick a new random height and reset the counter
+                if (++columns[i].stackCounter >= columns[i].stackHeight) {
+                    columns[i].stackHeight = 10 + Math.random() * maxStackHeight;
+                    columns[i].stackCounter = 0;
+                }
+            }
+        }
+
+        // MAIN LOOP
+        function tick() {
+            draw();
+            setTimeout(tick, 70);
+        }
+
+        function period(shift = 0) {
+            const startDate = new Date();
+            const endDate   = new Date("2022-11-02T19:00:00");
+            let period = (endDate.getTime() - startDate.getTime() + shift) / 1000;
+            if (period > 0) {
+                const seconds = Math.floor(period % 60);
+                period = Math.floor(period / 60);
+                const minutes = period % 60;
+                period = Math.floor(period / 60);
+                const hours = period % 24;
+                period = Math.floor(period / 24);
+                const days = period;
+                return (days > 0 ? `${days} Days ` : "") + `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`
+            }
+            return ""
+        }
+
+        function countDown() {
+            document.getElementById("message").innerHTML = period() + " " + caret;
+            setTimeout(countDown, 1000);
+        }
+    </script>
+
+    <style>
+        #message {
+            position: absolute;
+            text-align: center;
+            top: 40%;
+            width: 100%;
+            font-size: 90px;
+            box-sizing: border-box;
+            font-weight: bold;
+            transition: ease-in-out 5s;
+            font-family: Arial, Helvetica, sans-serif;
+            text-align: center;
+            overflow: hidden;
+            transform: translateY(-50%);
+            color: rgba(0, 255, 0);
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+
+        #caret {
+            animation: blink 0.75s step-end infinite;
+            border-left: 20px solid rgba(0, 255, 0, 0.75);
+        }
+
+        @keyframes blink {
+
+            from,
+            to {
+                border-color: rgba(0, 255, 0, 0.75);
+            }
+
+            50% {
+                border-color: transparent;
+            }
+        }
+    </style>
+</head>
+
+<body onload="init();" style="margin: 0; padding: 0; background-color:#000000;">
+    <canvas id="canvas" width="1280" height="720" style="display:block;margin:0 auto;"></canvas>
+    <p id="message"><span id="caret">&nbsp;</span></p>
+</body>
+
+</html>
