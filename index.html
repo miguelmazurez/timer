@@ -2,7 +2,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>Matrix Text Effect - pingpoli.de</title>
+    <title>Timer</title>
     <script>
         var message = "";
         var caret = '<span id="caret">&nbsp;</span>'
@@ -113,8 +113,8 @@
 
         function period(shift = 0) {
             const startDate = new Date();
-            const endDate   = new Date("2022-11-02T19:00:00");
-            let period = (endDate.getTime() - startDate.getTime() + shift) / 1000;
+            const endDate   = Date.UTC(2022, 10, 2, 7)
+            let period = (endDate - startDate.getTime() + shift) / 1000;
             if (period > 0) {
                 const seconds = Math.floor(period % 60);
                 period = Math.floor(period / 60);
